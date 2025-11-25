@@ -2,6 +2,8 @@
 
 A minimal URL shortener built with Node.js, Express, and PostgreSQL.
 
+🔗 **Live Demo:** [https://ur-l-shortner-theta.vercel.app](https://ur-l-shortner-theta.vercel.app)
+
 ## Features
 
 - ✂️ Shorten long URLs
