@@ -10,6 +10,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+// Root route
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
 // Create short URL
 app.post('/api/shorten', async (req, res) => {
   const { url } = req.body;
@@ -70,10 +75,14 @@ app.get('/:shortCode', async (req, res) => {
   }
 });
 
-initDB().then(() => {
+// Initialize DB
+initDB().catch(console.error);
+
+// Start server (only in non-serverless environment)
+if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
-});
+}
 
 module.exports = app;
