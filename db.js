@@ -14,7 +14,8 @@ const initDB = async () => {
         short_code VARCHAR(10) UNIQUE NOT NULL,
         original_url TEXT NOT NULL,
         clicks INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_clicked_at TIMESTAMP
       )
     `);
   } finally {

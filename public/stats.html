@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Stats - URL Shortener</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+      <a href="/" class="text-blue-600 hover:underline">&larr; Back to Dashboard</a>
+    </div>
+
+    <h1 class="text-4xl font-bold text-center mb-8 text-blue-600">Link Statistics</h1>
+    
+    <div id="loading" class="text-center py-8">
+      <p class="text-gray-500">Loading...</p>
+    </div>
+
+    <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+      <p class="text-red-600"></p>
+    </div>
+
+    <div id="stats" class="hidden bg-white rounded-lg shadow-md p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-blue-50 rounded-lg p-4">
+          <p class="text-sm text-gray-600 mb-1">Short Code</p>
+          <p id="code" class="text-2xl font-bold text-blue-600"></p>
+        </div>
+        <div class="bg-green-50 rounded-lg p-4">
+          <p class="text-sm text-gray-600 mb-1">Total Clicks</p>
+          <p id="clicks" class="text-2xl font-bold text-green-600"></p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <p class="text-sm text-gray-600 mb-1">Target URL</p>
+          <p id="targetUrl" class="text-lg break-all text-gray-800"></p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600 mb-1">Short URL</p>
+          <div class="flex gap-2 items-center">
+            <input 
+              type="text" 
+              id="shortUrl" 
+              readonly
+              class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded"
+            >
+            <button 
+              onclick="copyUrl()"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Created At</p>
+            <p id="createdAt" class="text-gray-800"></p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Last Clicked</p>
+            <p id="lastClicked" class="text-gray-800"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const code = window.location.pathname.split('/').pop();
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const stats = document.getElementById('stats');
+
+    async function loadStats() {
+      try {
+        const res = await fetch(`/api/links/${code}`);
+        
+        if (!res.ok) {
+          throw new Error('Link not found');
+        }
+
+        const data = await res.json();
+        
+        document.getElementById('code').textContent = data.code;
+        document.getElementById('clicks').textContent = data.clicks;
+        document.getElementById('targetUrl').textContent = data.targetUrl;
+        document.getElementById('shortUrl').value = `${window.location.origin}/${data.code}`;
+        document.getElementById('createdAt').textContent = new Date(data.createdAt).toLocaleString();
+        document.getElementById('lastClicked').textContent = data.lastClickedAt 
+          ? new Date(data.lastClickedAt).toLocaleString() 
+          : 'Never';
+
+        loading.classList.add('hidden');
+        stats.classList.remove('hidden');
+      } catch (err) {
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+        error.querySelector('p').textContent = err.message;
+      }
+    }
+
+    function copyUrl() {
+      const input = document.getElementById('shortUrl');
+      input.select();
+      document.execCommand('copy');
+      alert('Copied to clipboard!');
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>
