@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-4xl font-bold text-center mb-8 text-blue-600">URL Shortener</h1>
+    
+    <!-- Shorten Form -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">Shorten a URL</h2>
+      <form id="shortenForm" class="flex gap-2">
+        <input 
+          type="url" 
+          id="urlInput" 
+          placeholder="https://example.com/very-long-url" 
+          required
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+        <button 
+          type="submit"
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          Shorten
+        </button>
+      </form>
+      <div id="result" class="mt-4 hidden">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+          <p class="text-sm text-gray-600 mb-1">Your shortened URL:</p>
+          <div class="flex gap-2 items-center">
+            <input 
+              type="text" 
+              id="shortUrl" 
+              readonly
+              class="flex-1 px-3 py-2 bg-white border border-gray-300 rounded"
+            >
+            <button 
+              onclick="copyUrl()"
+              class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- URL List -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h2 class="text-xl font-semibold mb-4">Your Links</h2>
+      <div id="urlList" class="space-y-3">
+        <p class="text-gray-500 text-center py-4">No links yet</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('shortenForm');
+    const urlInput = document.getElementById('urlInput');
+    const result = document.getElementById('result');
+    const shortUrlInput = document.getElementById('shortUrl');
+    const urlList = document.getElementById('urlList');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value;
+
+      try {
+        const res = await fetch('/api/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          shortUrlInput.value = data.shortUrl;
+          result.classList.remove('hidden');
+          urlInput.value = '';
+          loadUrls();
+        } else {
+          alert(data.error);
+        }
+      } catch (error) {
+        alert('Failed to shorten URL');
+      }
+    });
+
+    function copyUrl() {
+      shortUrlInput.select();
+      document.execCommand('copy');
+      alert('Copied to clipboard!');
+    }
+
+    async function loadUrls() {
+      try {
+        const res = await fetch('/api/urls');
+        const urls = await res.json();
+
+        if (urls.length === 0) {
+          urlList.innerHTML = '<p class="text-gray-500 text-center py-4">No links yet</p>';
+          return;
+        }
+
+        urlList.innerHTML = urls.map(url => `
+          <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+            <div class="flex justify-between items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-blue-600 truncate">
+                  <a href="/${url.short_code}" target="_blank">
+                    ${window.location.origin}/${url.short_code}
+                  </a>
+                </p>
+                <p class="text-sm text-gray-600 truncate">${url.original_url}</p>
+                <p class="text-xs text-gray-500 mt-1">
+                  ${url.clicks} clicks • ${new Date(url.created_at).toLocaleDateString()}
+                </p>
+              </div>
+              <button 
+                onclick="deleteUrl('${url.short_code}')"
+                class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load URLs', error);
+      }
+    }
+
+    async function deleteUrl(shortCode) {
+      if (!confirm('Delete this link?')) return;
+
+      try {
+        await fetch(`/api/urls/${shortCode}`, { method: 'DELETE' });
+        loadUrls();
+      } catch (error) {
+        alert('Failed to delete URL');
+      }
+    }
+
+    loadUrls();
+  </script>
+</body>
+</html>
